@@ -1,5 +1,4 @@
-#!/usr/bin/env python
 # -*- coding:utf-8 -*-
-
-from connection import Connection
-from pool import ConnectionPool
+from . import thrift2
+# import sys
+# sys.modules['thrift2'] = thrift2

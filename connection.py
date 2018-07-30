@@ -1,27 +1,62 @@
 # -*- coding:utf-8 -*-
+from abc import ABCMeta, abstractmethod
 
-from thrift import Thrift
-from thrift.transport import TSocket
-from thrift.transport import TTransport
-from thrift.protocol import TBinaryProtocol
-from thrift.packages.hbase import THBaseService
-from thrift.packages.hbase.ttypes import *
+from .table import Table
+from .thrift2.hbase import *
+from .thrift2.protocol import TBinaryProtocol
+from .thrift2.transport import TSocket
+from .thrift2.transport import TTransport
 
-DEFAULT_HOST = 'localhost'
-DEFAULT_PORT = 9090
+class ConnIFace:
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def __del__(self):
+        pass
+
+    @abstractmethod
+    def refresh_thrift_client(self):
+        pass
+
+    @abstractmethod
+    def open(self):
+        pass
+
+    @abstractmethod
+    def close(self):
+        pass
+
+    @abstractmethod
+    def tableConnection(self, tableName):
+        pass
 
 
-class Connection(object):
+class Connection(ConnIFace):
 
-    def __init__(self, host=DEFAULT_HOST, port=DEFAULT_PORT, timeout=None, autoconnect=True):
-        self.host = host or DEFAULT_HOST
-        self.port = port or DEFAULT_PORT
+    DEFAULT_HOST = 'localhost'
+    DEFAULT_PORT = 9090
+
+    def __init__(self, host=None, port=None, timeout=None, autoconnect=True):
+        self.host = host or self.__class__.DEFAULT_HOST
+        self.port = port or self.__class__.DEFAULT_PORT
         self.timeout = timeout
         self.transport = None
         self.client = None
+        self.__tableName = None
         self.refresh_thrift_client()
         if autoconnect:
             self.open()
+
+    def __repr__(self):
+        return '<%s.%s host=%r,port=%r>' % (
+            __name__,
+            self.__class__.__name__,
+            self.host,
+            self.port,
+        )
+
+    def __del__(self):
+        self.close()
 
     def refresh_thrift_client(self):
         socket = TSocket.TSocket(self.host, self.port)
@@ -45,22 +80,6 @@ class Connection(object):
             return
         self.transport.close()
 
-    def get(self, table, key, **kwargs):
-        t_get = TGet()
-        t_get.row = key
-        result = self.client.get(table, t_get)
-        data = []
-        # 我这里写的真不错～ 嘿嘿
-        for columnValue in result.columnValues:
-            for (k, v) in kwargs.items():
-                if not columnValue.__dict__.get(k) == v:
-                    break
-            else:
-                data.append(columnValue.value)
-        return data
-
-    def put(self, table, key, value, family=None, qualifier=None, timestamp=None):
-        column = TColumnValue(family=family, qualifier=qualifier, value=value, timestamp=timestamp)
-        columns = [column]
-        t_put = TPut(key, columns)
-        return self.client.put(table, t_put)
+    def tableConnection(self, tableName):
+        self.__tableName = tableName
+        return Table(tableName,self)
