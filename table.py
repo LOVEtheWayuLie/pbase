@@ -3,10 +3,10 @@ from .thrift2.hbase.ttypes import *
 from abc import ABCMeta, abstractmethod
 from .thrift2.utils import make_to_dict, make_ordered_to_dict
 from collections import Iterable
+import six
 
 
-class TableInterface:
-    __metaclass__ = ABCMeta
+class TableInterface( six.with_metaclass( ABCMeta)):
     '''
     table operating
     All operations are sorted by timestamp

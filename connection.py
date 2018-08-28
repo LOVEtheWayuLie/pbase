@@ -6,9 +6,9 @@ from .thrift2.hbase import *
 from .thrift2.protocol import TBinaryProtocol
 from .thrift2.transport import TSocket
 from .thrift2.transport import TTransport
+import six
 
-class ConnIFace:
-    __metaclass__ = ABCMeta
+class ConnIFace( six.with_metaclass(ABCMeta)):
 
     @abstractmethod
     def __del__(self):
